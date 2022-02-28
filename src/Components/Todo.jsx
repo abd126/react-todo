@@ -1,7 +1,9 @@
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button, Col, Container, FormControl, InputGroup, Row } from 'react-bootstrap';
 import { Trash, Plus } from 'react-bootstrap-icons';
+import { db } from '../Config/Firebase'
+import { addDoc, collection, getDocs} from 'firebase/firestore';
 import './Todo.css'
 
 
@@ -9,12 +11,40 @@ import './Todo.css'
 const Todo = () => {
   const [todo, setTodo] = useState([]);
   const [inputData, setInputData] = useState("");
+  const [refresh , setRefresh] = useState(false)
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(async  ()=>{
+    const dbRef = collection(db,"Todos")
+    const data = await getDocs(dbRef)
+    let getTodo = []
+    data.forEach((doc) => {
+      getTodo.push({ key: doc.id, todo: doc.data().todo });
+    
+      setTodo(getTodo)
+    });
+    console.log(data)
+  },[refresh])
+
+
+
+
 
   //Add Todo In List
-  const addTodo = () => {
+  const addTodo = async () => {
     if (!inputData) {
-
+      alert("Enter Todo First")
     } else {
+      const dbRef = collection(db,"Todos")
+      try{
+        const addData = await addDoc(dbRef, {
+          todo : inputData
+        })
+        setRefresh(!refresh)
+        console.log(addData)
+      }catch(error){
+        console.log(error)
+      }
       setTodo([...todo, inputData])
       setInputData('')
     }
@@ -35,13 +65,13 @@ const Todo = () => {
   //   console.log(newEditItem)
   //   setInputData(newEditItem.val)
   //   console.log(id.val)
-   
+
   // }
 
 
-  const deleteItem = (id) =>{
+  const deleteItem = (id) => {
     console.log(id)
-    const updateItem = todo.filter((elem , ind)=>{
+    const updateItem = todo.filter((elem, ind) => {
       return ind !== id
     })
     setTodo(updateItem)
@@ -73,12 +103,12 @@ const Todo = () => {
 
 
         <Row className='my-3'>
-          {todo.map((val, ind , elem) => {
+          {todo.map((val, ind, elem) => {
             return (
               <Col key={ind} md={7} className="mx-auto text-start border-dark border-bottom mt-5 d-flex justify-content-between">
                 {val}
                 {/* <Button variant="outline-secondary" className='btnn' > <Plus size={20} /> </Button> */}
-                <Button variant="outline-secondary" className='btnn btnn-2' onClick={()=> deleteItem(ind)}>
+                <Button variant="outline-secondary" className='btnn btnn-2' onClick={() => deleteItem(ind)}>
                   <Trash size={20} />
                 </Button>
               </Col>

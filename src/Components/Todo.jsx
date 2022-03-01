@@ -1,9 +1,9 @@
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import { Button, Col, Container, FormControl, InputGroup, Row } from 'react-bootstrap';
 import { Trash, Plus } from 'react-bootstrap-icons';
 import { db } from '../Config/Firebase'
-import { addDoc, collection, getDocs} from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc} from 'firebase/firestore';
 import './Todo.css'
 
 
@@ -14,16 +14,15 @@ const Todo = () => {
   const [refresh , setRefresh] = useState(false)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(async  ()=>{
+  useEffect( async ()=>{
     const dbRef = collection(db,"Todos")
-    const data = await getDocs(dbRef)
-    let getTodo = []
-    data.forEach((doc) => {
-      getTodo.push({ key: doc.id, todo: doc.data().todo });
-    
-      setTodo(getTodo)
+    const querySnapshot = await getDocs(dbRef)
+    let getTodo = [];
+    querySnapshot.forEach((doc) => {
+      getTodo.push({key:doc.id,todo:doc.data().todo})
     });
-    console.log(data)
+    setTodo(getTodo);
+    
   },[refresh])
 
 
@@ -41,7 +40,7 @@ const Todo = () => {
           todo : inputData
         })
         setRefresh(!refresh)
-        console.log(addData)
+        // console.log(addData)
       }catch(error){
         console.log(error)
       }
@@ -52,29 +51,34 @@ const Todo = () => {
   }
 
   // Delete All Todos
-  const deleteAll = () => {
+  const deleteAll = async () => {
+ 
+
     setTodo([])
     setInputData('')
   }
 
   /// edit todo
-  // const editTodo = (id) =>{
-  //   let newEditItem = todo.filter((elem,ind)=>{
-  //     return elem.id === id 
-  //   })
-  //   console.log(newEditItem)
-  //   setInputData(newEditItem.val)
-  //   console.log(id.val)
+  const editTodo =async (key) =>{
+      const data = prompt()
+      const dbRef = doc(db,"Todos",key)
+      const editData = await updateDoc(dbRef , {
+        todo : data
+      })
+      setRefresh(!refresh)
 
-  // }
+  }
 
 
-  const deleteItem = (id) => {
-    console.log(id)
-    const updateItem = todo.filter((elem, ind) => {
-      return ind !== id
-    })
-    setTodo(updateItem)
+  const deleteItem =async (key) => {
+    // console.log(id)
+    // const updateItem = todo.filter((elem, ind) => {
+    //   return ind !== id
+    // })
+    // setTodo(updateItem)
+    const dbRef = doc(db,"Todos",key)
+    const deletData = await deleteDoc(dbRef)
+    setRefresh(!refresh)
   }
 
   return (
@@ -106,12 +110,17 @@ const Todo = () => {
           {todo.map((val, ind, elem) => {
             return (
               <Col key={ind} md={7} className="mx-auto text-start border-dark border-bottom mt-5 d-flex justify-content-between">
-                {val}
-                {/* <Button variant="outline-secondary" className='btnn' > <Plus size={20} /> </Button> */}
-                <Button variant="outline-secondary" className='btnn btnn-2' onClick={() => deleteItem(ind)}>
+                {val.todo}
+                <Button variant="outline-secondary" className='btnn' > <Plus size={20}  onClick={() =>editTodo(val.key)}/> </Button>
+                <Button variant="outline-secondary" className='btnn btnn-2' onClick={() => deleteItem(val.key)}>
                   <Trash size={20} />
                 </Button>
               </Col>
+
+              // <div key={ind}>
+              //   <li>{val.todo}</li>
+              // </div>
+
             )
           })}
         </Row>
